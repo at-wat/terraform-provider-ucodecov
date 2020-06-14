@@ -1,0 +1,23 @@
+name: ci
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2
+      - name: Run go vet
+        run: go vet ./...
+      - name: Run go build
+        run: go build ./...
+      - name: Run go test
+        run: go test ./... -v -race
