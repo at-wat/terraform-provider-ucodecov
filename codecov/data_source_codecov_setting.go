@@ -94,6 +94,11 @@ func dataCodecovSettingsRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(resp.Status)
+	}
+
 	dec := json.NewDecoder(resp.Body)
 
 	var s Settings
