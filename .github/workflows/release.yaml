@@ -15,7 +15,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
       - name: Load signing key
-        run: echo "${{ secrets.PGP_SIGN_KEY }}" | gpg --import
+        run: echo "${{ secrets.PGP_SIGN_KEY }}" | gpg --import --no-tty --batch
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
