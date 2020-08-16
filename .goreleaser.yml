@@ -31,6 +31,8 @@ signs:
     args:
       - "--batch"
       - "--no-tty"
+      - "--passphrase={{ .Env.SIGN_KEY_PASSPHRESE }}"
+      - "--pinentry-mode=loopback"
       - "--local-user"
       - "{{ .Env.GPG_FINGERPRINT }}"
       - "--output"
