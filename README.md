@@ -1,6 +1,6 @@
 # terraform-provider-ucodecov
 
-Unofficial Codecov Provider
+Codecov Provider (unofficial)
 
 - [Document](docs/index.md)
 - [License - Apache 2.0](./LICENSE)
