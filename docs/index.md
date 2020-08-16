@@ -17,6 +17,12 @@ terraform {
   }
 }
 
+locals {
+  owner = "at-wat"
+  repo  = "terraform-provider-ucodecov"
+}
+
+
 provider "ucodecov" {
 }
 
@@ -25,11 +31,6 @@ provider "github" {
   version      = "~> 2.6"
 }
 
-
-locals {
-  owner = "at-wat"
-  repo  = "terraform-provider-ucodecov"
-}
 
 data "ucodecov_settings" "this" {
   service = "gh"
