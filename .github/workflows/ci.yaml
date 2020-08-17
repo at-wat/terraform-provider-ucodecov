@@ -32,6 +32,9 @@ jobs:
           mkdir -p ${dir}
           cp terraform-provider-ucodecov ${dir}/terraform-provider-ucodecov_v0.0.99
           cp .ci/terraform.tfvars examples/terraform/
+      - name: Install terraform
+        working-directory: examples/terraform
+        run: tfenv install
       - name: E2E test
         working-directory: examples/terraform
         run: |
