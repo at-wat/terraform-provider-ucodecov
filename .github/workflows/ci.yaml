@@ -39,7 +39,7 @@ jobs:
         working-directory: examples/terraform
         run: |
           terraform init
-          terraform plan
-          terraform apply
+          terraform plan --out plan
+          terraform apply -refresh=false plan
         env:
           CODECOV_API_TOKEN: ${{ secrets.CODECOV_API_TOKEN }}
