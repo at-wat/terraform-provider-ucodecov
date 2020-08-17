@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	maxRetry      = 5
+	maxRetry      = 6
 	retryWaitBase = time.Second
 )
 
