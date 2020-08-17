@@ -21,3 +21,25 @@ jobs:
         run: go build ./...
       - name: Run go test
         run: go test ./... -v -race
+      - name: Install tfenv
+        run: |
+          git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+          echo "::add-path::$HOME/.tfenv/bin"
+      - name: Prepare data
+        run: |
+          go build .
+          dir=examples/terraform/.terraform/plugins/registry.terraform.io/at-wat/ucodecov/0.0.99/linux_amd64
+          mkdir -p ${dir}
+          cp terraform-provider-ucodecov ${dir}/terraform-provider-ucodecov_v0.0.99
+          cp .ci/terraform.tfvars examples/terraform/
+      - name: Install terraform
+        working-directory: examples/terraform
+        run: tfenv install
+      - name: E2E test
+        working-directory: examples/terraform
+        run: |
+          terraform init
+          terraform plan --out plan
+          terraform apply -refresh=false plan
+        env:
+          CODECOV_API_TOKEN: ${{ secrets.CODECOV_API_TOKEN }}
