@@ -4,10 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+const (
+	maxRetry      = 6
+	retryWaitBase = time.Second
 )
 
 type Owner struct {
@@ -80,6 +87,38 @@ func dataCodecovSettingsRead(d *schema.ResourceData, meta interface{}) error {
 		return errors.New("CODECOV_API_TOKEN is not given")
 	}
 
+	var (
+		s   *Settings
+		err error
+	)
+	wait := retryWaitBase
+	for i := 0; ; i++ {
+		s, err = readRepoSetting(service, owner, repo, token)
+		if err == nil {
+			d.SetId(fmt.Sprintf("%s/%s/%s", service, owner, repo))
+			d.Set("updatestamp", s.Repo.Updatestamp)
+			d.Set("upload_token", s.Repo.UploadToken)
+			return nil
+		}
+		var netErr net.Error
+		if errors.As(err, &netErr) {
+			if !netErr.Timeout() && !netErr.Temporary() {
+				// Immediately exit if non-timeout error is returned.
+				return err
+			}
+		} else {
+			// Immediately exit if non-network error is returned.
+			return err
+		}
+		if i >= maxRetry {
+			return err
+		}
+		time.Sleep(wait)
+		wait *= 2
+	}
+}
+
+func readRepoSetting(service, owner, repo, token string) (*Settings, error) {
 	req, err := http.NewRequest("GET",
 		fmt.Sprintf("https://codecov.io/api/pub/%s/%s/%s/settings",
 			service, owner, repo,
@@ -91,22 +130,30 @@ func dataCodecovSettingsRead(d *schema.ResourceData, meta interface{}) error {
 	cli := &http.Client{}
 	resp, err := cli.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return errors.New(resp.Status)
+	switch resp.StatusCode {
+	case http.StatusOK:
+	case http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		return nil, &timeoutError{errors.New(resp.Status)}
+	default:
+		return nil, errors.New(resp.Status)
 	}
 
 	dec := json.NewDecoder(resp.Body)
 
 	var s Settings
 	if err := dec.Decode(&s); err != nil {
-		return err
+		return nil, err
 	}
-	d.SetId(fmt.Sprintf("%s/%s/%s", service, owner, repo))
-	d.Set("updatestamp", s.Repo.Updatestamp)
-	d.Set("upload_token", s.Repo.UploadToken)
-	return nil
+	return &s, nil
 }
+
+type timeoutError struct {
+	error
+}
+
+func (e *timeoutError) Timeout() bool   { return true }
+func (e *timeoutError) Temporary() bool { return true }
