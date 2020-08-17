@@ -14,12 +14,20 @@ terraform {
 provider "ucodecov" {
 }
 
+variable "owner" {
+  default = "your-gh-account"
+}
+
+variable "repo" {
+  default = "your-repository"
+}
+
 data "ucodecov_settings" "test" {
   service = "gh"
-  owner   = "your-gh-account"
-  repo    = "your-repository"
+  owner   = var.owner
+  repo    = var.repo
 }
 
 output "test" {
-  value = "${data.ucodecov_settings.test.updatestamp}"
+  value = data.ucodecov_settings.test.updatestamp
 }
