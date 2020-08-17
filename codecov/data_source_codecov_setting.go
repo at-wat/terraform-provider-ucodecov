@@ -102,7 +102,7 @@ func dataCodecovSettingsRead(d *schema.ResourceData, meta interface{}) error {
 		}
 		var netErr net.Error
 		if errors.As(err, &netErr) {
-			if !netErr.Timeout() {
+			if !netErr.Timeout() && !netErr.Temporary() {
 				// Immediately exit if non-timeout error is returned.
 				return err
 			}
