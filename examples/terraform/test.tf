@@ -2,6 +2,13 @@ terraform {
   backend "local" {
     path = "terraform.tfstate"
   }
+  required_version = ">= 0.13"
+  required_providers {
+    ucodecov = {
+      source  = "at-wat/ucodecov"
+      version = "~> 0.0"
+    }
+  }
 }
 
 provider "ucodecov" {
