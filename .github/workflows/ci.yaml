@@ -39,4 +39,4 @@ jobs:
           terraform plan
           terraform apply
         env:
-          CODECOV_API_TOKEN: {{ secrets.CODECOV_API_TOKEN }}
+          CODECOV_API_TOKEN: ${{ secrets.CODECOV_API_TOKEN }}
