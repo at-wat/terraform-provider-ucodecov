@@ -25,13 +25,13 @@ jobs:
         run: |
           git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
           echo "::add-path::$HOME/.tfenv/bin"
-      - name: Install plugin
+      - name: Prepare data
         run: |
+          go build .
           dir=examples/terraform/.terraform/plugins/registry.terraform.io/at-wat/ucodecov/0.0.99/linux_amd64
           mkdir -p ${dir}
           cp terraform-provider-ucodecov ${dir}/terraform-provider-ucodecov_v0.0.99
-      - name: Prepare data
-        run: cp .ci/terraform.tfvars examples/terraform/
+          cp .ci/terraform.tfvars examples/terraform/
       - name: E2E test
         working-directory: examples/terraform
         run: |
