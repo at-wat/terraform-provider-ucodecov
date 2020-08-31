@@ -17,6 +17,6 @@ jobs:
         with:
           git_user: Atsushi Watanabe
           git_email: atsushi.w@ieee.org
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GO_SUM_FIX_GITHUB_TOKEN }}
           commit_style: squash
           push: force
