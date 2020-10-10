@@ -84,7 +84,7 @@ func dataCodecovSettingsRead(d *schema.ResourceData, meta interface{}) error {
 
 	token, ok := os.LookupEnv("CODECOV_API_TOKEN")
 	if !ok {
-		return errors.New("CODECOV_API_TOKEN is not given")
+		return errors.New("codecov: CODECOV_API_TOKEN is not given")
 	}
 
 	var (
@@ -104,14 +104,14 @@ func dataCodecovSettingsRead(d *schema.ResourceData, meta interface{}) error {
 		if errors.As(err, &netErr) {
 			if !netErr.Timeout() && !netErr.Temporary() {
 				// Immediately exit if non-timeout error is returned.
-				return err
+				return fmt.Errorf("codecov: %w", err)
 			}
 		} else {
 			// Immediately exit if non-network error is returned.
-			return err
+			return fmt.Errorf("codecov: %w", err)
 		}
 		if i >= maxRetry {
-			return err
+			return fmt.Errorf("codecov: %w", err)
 		}
 		time.Sleep(wait)
 		wait *= 2
