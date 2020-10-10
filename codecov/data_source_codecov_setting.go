@@ -127,7 +127,11 @@ func readRepoSetting(service, owner, repo, token string) (*Settings, error) {
 	)
 	req.Header.Add("Authorization", fmt.Sprintf("token %s", token))
 
-	cli := &http.Client{}
+	cli := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 	resp, err := cli.Do(req)
 	if err != nil {
 		return nil, err
@@ -136,7 +140,12 @@ func readRepoSetting(service, owner, repo, token string) (*Settings, error) {
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-	case http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+	case http.StatusServiceUnavailable, http.StatusGatewayTimeout, http.StatusBadGateway:
+		return nil, &timeoutError{errors.New(resp.Status)}
+	case http.StatusFound, http.StatusTemporaryRedirect:
+		// There was a bug that the request was redirected to the html setting page.
+		// Wait extra 1 second and retry to workaround the problem.
+		time.Sleep(time.Second)
 		return nil, &timeoutError{errors.New(resp.Status)}
 	default:
 		return nil, errors.New(resp.Status)
