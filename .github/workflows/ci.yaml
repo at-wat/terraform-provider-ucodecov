@@ -24,7 +24,7 @@ jobs:
       - name: Install tfenv
         run: |
           git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
-          echo "::add-path::$HOME/.tfenv/bin"
+          echo "${HOME}/.tfenv/bin" >> ${GITHUB_PATH}
       - name: Prepare data
         run: |
           go build .
