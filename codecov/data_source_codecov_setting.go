@@ -119,8 +119,14 @@ func dataCodecovSettingsRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func readRepoSetting(service, owner, repo, token string) (*Settings, error) {
+	codecovAPIBase, ok := os.LookupEnv("CODECOV_API_BASE")
+	if !ok {
+		codecovAPIBase = "https://codecov.io/api/pub/"
+	}
+
 	req, err := http.NewRequest("GET",
-		fmt.Sprintf("https://codecov.io/api/pub/%s/%s/%s/settings",
+		fmt.Sprintf("%s/%s/%s/%s/settings",
+			codecovAPIBase,
 			service, owner, repo,
 		),
 		http.NoBody,
