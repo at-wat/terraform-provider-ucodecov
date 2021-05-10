@@ -21,10 +21,6 @@ jobs:
         run: go build ./...
       - name: Run go test
         run: go test ./... -v -race
-      - name: Install tfenv
-        run: |
-          git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
-          echo "${HOME}/.tfenv/bin" >> ${GITHUB_PATH}
       - name: Prepare data
         run: |
           go build .
@@ -32,13 +28,22 @@ jobs:
           mkdir -p ${dir}
           cp terraform-provider-ucodecov ${dir}/terraform-provider-ucodecov_v0.0.99
           cp .ci/terraform.tfvars examples/terraform/
-      - name: Install terraform
+      - name: Get terraform version
         working-directory: examples/terraform
-        run: tfenv install
-      - name: E2E test
+        id: terraform-version
+        run: echo "::set-output name=version::$(cat .terraform-version)"
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: ${{ steps.terraform-version.outputs.version }}
+          terraform_wrapper: false
+      - name: E2E test init
+        working-directory: examples/terraform
+        run: terraform init
+      - name: E2E test plan
+        if: github.event.pull_request.head.repo.fork == false
         working-directory: examples/terraform
         run: |
-          terraform init
           terraform plan --out plan
           terraform apply -refresh=false plan
         env:
