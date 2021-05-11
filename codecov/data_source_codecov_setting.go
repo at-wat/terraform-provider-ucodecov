@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -81,9 +80,8 @@ func dataCodecovSettingsRead(d *schema.ResourceData, meta interface{}) error {
 	service := d.Get("service").(string)
 	owner := d.Get("owner").(string)
 	repo := d.Get("repo").(string)
-
-	token, ok := os.LookupEnv("CODECOV_API_TOKEN")
-	if !ok {
+	token := meta.(string)
+	if token == "" {
 		return errors.New("codecov: CODECOV_API_TOKEN is not given")
 	}
 
