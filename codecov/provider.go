@@ -15,6 +15,7 @@ func Provider() *schema.Provider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("CODECOV_API_TOKEN", nil),
+				Sensitive: true,
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
