@@ -16,40 +16,14 @@ const (
 	retryWaitBase = time.Second
 )
 
-type Owner struct {
-	Username    string `json:"username"`
-	Name        string `json:"name"`
-	Service     string `json:"service"`
-	Updatestamp string `json:"updatestamp"`
-	AvatarURL   string `json:"avatar_url"`
-	ServiceID   string `json:"service_id"`
+// Config represents json format returned from https://codecov.io/api/v2/gh/owner/repos/repo/config
+type Config struct {
+	UploadToken string `json:"upload_token"`
 }
 
-type Repo struct {
-	UsingIntegration bool   `json:"using_integration"`
-	Name             string `json:"name"`
-	Language         string `json:"language"`
-	Deleted          bool   `json:"deleted"`
-	BotUsername      string `json:"bot_username"`
-	Activated        bool   `json:"activated"`
-	Private          bool   `json:"private"`
-	Updatestamp      string `json:"updatestamp"`
-	Branch           string `json:"branch"`
-	UploadToken      string `json:"upload_token"`
-	Active           bool   `json:"active"`
-	ServiceID        string `json:"service_id"`
-	ImageToken       string `json:"image_token"`
-}
-
-// Settings represents json format returned from https://codecov.io/api/pub/gh/owner/repo/settings.
-type Settings struct {
-	Owner Owner `json:"owner"`
-	Repo  Repo  `json:"repo"`
-}
-
-func dataSourceCodecovSettings() *schema.Resource {
+func dataSourceCodecovConfig() *schema.Resource {
 	return &schema.Resource{
-		Read: dataCodecovSettingsRead,
+		Read: dataCodecovConfigRead,
 		Schema: map[string]*schema.Schema{
 			"service": {
 				Type:     schema.TypeString,
@@ -63,10 +37,6 @@ func dataSourceCodecovSettings() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"updatestamp": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"upload_token": {
 				Type:      schema.TypeString,
 				Computed:  true,
@@ -76,26 +46,25 @@ func dataSourceCodecovSettings() *schema.Resource {
 	}
 }
 
-func dataCodecovSettingsRead(d *schema.ResourceData, meta interface{}) error {
+func dataCodecovConfigRead(d *schema.ResourceData, meta interface{}) error {
 	service := d.Get("service").(string)
 	owner := d.Get("owner").(string)
 	repo := d.Get("repo").(string)
 	token := meta.(string)
 	if token == "" {
-		return errors.New("codecov: CODECOV_API_TOKEN is not given")
+		return errors.New("codecov: CODECOV_API_V2_TOKEN is not given")
 	}
 
 	var (
-		s   *Settings
+		c   *Config
 		err error
 	)
 	wait := retryWaitBase
 	for i := 0; ; i++ {
-		s, err = readRepoSetting(service, owner, repo, token)
+		c, err = readRepoConfig(service, owner, repo, token)
 		if err == nil {
 			d.SetId(fmt.Sprintf("%s/%s/%s", service, owner, repo))
-			d.Set("updatestamp", s.Repo.Updatestamp)
-			d.Set("upload_token", s.Repo.UploadToken)
+			d.Set("upload_token", c.UploadToken)
 			return nil
 		}
 		var netErr net.Error
@@ -116,14 +85,14 @@ func dataCodecovSettingsRead(d *schema.ResourceData, meta interface{}) error {
 	}
 }
 
-func readRepoSetting(service, owner, repo, token string) (*Settings, error) {
+func readRepoConfig(service, owner, repo, token string) (*Config, error) {
 	req, err := http.NewRequest("GET",
-		fmt.Sprintf("https://codecov.io/api/pub/%s/%s/%s/settings",
+		fmt.Sprintf("https://codecov.io/api/v2/%s/%s/repos/%s/config",
 			service, owner, repo,
 		),
 		http.NoBody,
 	)
-	req.Header.Add("Authorization", fmt.Sprintf("token %s", token))
+	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", token))
 
 	cli := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -151,11 +120,11 @@ func readRepoSetting(service, owner, repo, token string) (*Settings, error) {
 
 	dec := json.NewDecoder(resp.Body)
 
-	var s Settings
-	if err := dec.Decode(&s); err != nil {
+	var c Config
+	if err := dec.Decode(&c); err != nil {
 		return nil, err
 	}
-	return &s, nil
+	return &c, nil
 }
 
 type timeoutError struct {
