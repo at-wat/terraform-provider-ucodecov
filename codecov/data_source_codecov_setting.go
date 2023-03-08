@@ -87,7 +87,7 @@ func dataCodecovConfigRead(d *schema.ResourceData, meta interface{}) error {
 
 func readRepoConfig(service, owner, repo, token string) (*Config, error) {
 	req, err := http.NewRequest("GET",
-		fmt.Sprintf("https://codecov.io/api/v2/%s/%s/repos/%s/config",
+		fmt.Sprintf("https://codecov.io/api/v2/%s/%s/repos/%s/config/",
 			service, owner, repo,
 		),
 		http.NoBody,
