@@ -14,12 +14,12 @@ func Provider() *schema.Provider {
 			"token": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("CODECOV_API_TOKEN", nil),
-				Sensitive: true,
+				DefaultFunc: schema.EnvDefaultFunc("CODECOV_API_V2_TOKEN", nil),
+				Sensitive:   true,
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"ucodecov_settings": dataSourceCodecovSettings(),
+			"ucodecov_settings": dataSourceCodecovConfig(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}

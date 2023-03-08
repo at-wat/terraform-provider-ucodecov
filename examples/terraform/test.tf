@@ -29,5 +29,5 @@ data "ucodecov_settings" "test" {
 }
 
 output "test" {
-  value = data.ucodecov_settings.test.updatestamp
+  value = substr(data.ucodecov_settings.test.upload_token, -4, -1)
 }
