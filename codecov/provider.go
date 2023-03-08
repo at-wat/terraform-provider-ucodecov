@@ -11,7 +11,7 @@ import (
 func Provider() *schema.Provider {
 	provider := &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"token": {
+			"token_v2": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("CODECOV_API_V2_TOKEN", nil),
@@ -27,5 +27,5 @@ func Provider() *schema.Provider {
 }
 
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	return d.Get("token").(string), diag.Diagnostics{}
+	return d.Get("token_v2").(string), diag.Diagnostics{}
 }

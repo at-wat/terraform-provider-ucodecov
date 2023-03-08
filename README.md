@@ -8,5 +8,7 @@ Codecov Provider (unofficial)
 # Breaking changes in v1
 
 - Codecov API is updated to v2
-- Environment variable for Codecov API token is changed to `CODECOV_API_V2_TOKEN`
+- Requires v2 API token
+  - Environment variable is changed to `CODECOV_API_V2_TOKEN`
+  - Provider metadata is changed to `token_v2`
 - `updatestamp` output is removed
