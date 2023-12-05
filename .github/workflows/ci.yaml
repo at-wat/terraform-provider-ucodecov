@@ -26,9 +26,9 @@ jobs:
       - name: Prepare data
         run: |
           go build .
-          dir=examples/terraform/.terraform/plugins/registry.terraform.io/at-wat/ucodecov/0.0.99/linux_amd64
+          dir=examples/terraform/.terraform/plugins/registry.terraform.io/at-wat/ucodecov/99.0.0/linux_amd64
           mkdir -p ${dir}
-          cp terraform-provider-ucodecov ${dir}/terraform-provider-ucodecov_v0.0.99
+          cp terraform-provider-ucodecov ${dir}/terraform-provider-ucodecov_v99.0.0
           cp .ci/terraform.tfvars examples/terraform/
       - name: Get terraform version
         working-directory: examples/terraform
