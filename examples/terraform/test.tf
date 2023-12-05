@@ -29,5 +29,6 @@ data "ucodecov_settings" "test" {
 }
 
 output "test" {
-  value = substr(data.ucodecov_settings.test.upload_token, -4, -1)
+  value     = substr(data.ucodecov_settings.test.upload_token, -4, -1)
+  sensitive = true
 }

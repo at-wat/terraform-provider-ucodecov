@@ -1,6 +1,6 @@
 module github.com/at-wat/terraform-provider-ucodecov
 
-go 1.18
+go 1.21
 
 require github.com/hashicorp/terraform-plugin-sdk/v2 v2.29.0
 
