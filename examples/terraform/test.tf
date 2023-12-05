@@ -6,7 +6,7 @@ terraform {
   required_providers {
     ucodecov = {
       source  = "at-wat/ucodecov"
-      version = "~> 0.0"
+      version = ">= 1.0.0"
     }
   }
 }
