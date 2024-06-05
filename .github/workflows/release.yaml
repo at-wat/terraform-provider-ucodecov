@@ -22,7 +22,7 @@ jobs:
       - name: Load signing key
         run: echo "${{ secrets.PGP_SIGN_KEY }}" | gpg --import --no-tty --batch
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
           args: release --clean
