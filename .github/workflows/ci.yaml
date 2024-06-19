@@ -46,6 +46,7 @@ jobs:
         if: github.event.pull_request.head.repo.fork == false
         working-directory: examples/terraform
         run: |
+          terraform refresh
           terraform plan --out plan
           terraform apply -refresh=false plan
         env:
