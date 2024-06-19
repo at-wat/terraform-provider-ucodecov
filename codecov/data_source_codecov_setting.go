@@ -17,6 +17,7 @@ var (
 	maxRetry       = 6
 	retryWaitBase  = time.Second
 	waitOnRedirect = time.Second
+	waitOnNotFound = 5 * time.Second
 )
 
 // Config represents json format returned from https://codecov.io/api/v2/gh/owner/repos/repo/config
@@ -122,6 +123,11 @@ func readRepoConfig(ctx context.Context, service, owner, repo string, cfg *provi
 		// There was a bug that the request was redirected to the html setting page.
 		// Wait and retry to workaround the problem.
 		time.Sleep(waitOnRedirect)
+		return nil, &temporaryError{errors.New(resp.Status)}
+	case http.StatusNotFound:
+		// Codecov API returns 404 when the server is unstable.
+		// Wait and retry to workaround the problem.
+		time.Sleep(waitOnNotFound)
 		return nil, &temporaryError{errors.New(resp.Status)}
 	default:
 		return nil, &fatalError{errors.New(resp.Status)}
