@@ -23,6 +23,8 @@ jobs:
         run: go build ./...
       - name: Run go test
         run: go test ./... -v -race
+      - name: Prepare data
+        run: cp .ci/terraform.tfvars examples/terraform/
       - name: Get terraform version
         working-directory: examples/terraform
         id: terraform-version
@@ -35,8 +37,6 @@ jobs:
       - name: E2E test
         if: github.event.pull_request.head.repo.fork == false
         working-directory: examples/terraform
-        run: |
-          cp ../../.ci/terraform.tfvars ./
-          make test
+        run: make test
         env:
           CODECOV_API_V2_TOKEN: ${{ secrets.CODECOV_API_V2_TOKEN }}
