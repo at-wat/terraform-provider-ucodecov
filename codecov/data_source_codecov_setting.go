@@ -14,8 +14,10 @@ import (
 )
 
 var (
-	maxRetry      = 6
-	retryWaitBase = time.Second
+	maxRetry       = 6
+	retryWaitBase  = time.Second
+	waitOnRedirect = time.Second
+	waitOnNotFound = 5 * time.Second
 )
 
 // Config represents json format returned from https://codecov.io/api/v2/gh/owner/repos/repo/config
@@ -107,14 +109,11 @@ func readRepoConfig(ctx context.Context, service, owner, repo string, cfg *provi
 			return http.ErrUseLastResponse
 		},
 	}
-	t0 := time.Now()
 	resp, err := cli.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
-	d := time.Now().Sub(t0)
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -122,15 +121,14 @@ func readRepoConfig(ctx context.Context, service, owner, repo string, cfg *provi
 		return nil, &temporaryError{errors.New(resp.Status)}
 	case http.StatusFound, http.StatusTemporaryRedirect:
 		// There was a bug that the request was redirected to the html setting page.
-		// Wait extra 1 second and retry to workaround the problem.
-		time.Sleep(time.Second)
+		// Wait and retry to workaround the problem.
+		time.Sleep(waitOnRedirect)
 		return nil, &temporaryError{errors.New(resp.Status)}
 	case http.StatusNotFound:
-		if d > 10*time.Second {
-			// Codecov API returns 404 after large delay when the server is unstable.
-			return nil, &temporaryError{errors.New(resp.Status)}
-		}
-		fallthrough
+		// Codecov API returns 404 when the server is unstable.
+		// Wait and retry to workaround the problem.
+		time.Sleep(waitOnNotFound)
+		return nil, &temporaryError{errors.New(resp.Status)}
 	default:
 		return nil, &fatalError{errors.New(resp.Status)}
 	}
