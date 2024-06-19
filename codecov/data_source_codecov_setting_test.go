@@ -41,7 +41,7 @@ func TestDataCodecovConfigRead(t *testing.T) {
 	maxRetry = 3
 	retryWaitBase = 100 * time.Millisecond
 
-	t.Run("Normal", func(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
 		var called bool
 		endpoint, cancel := newDummyServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.RequestURI != "/api/v2/svc123/owner123/repos/repo123/config/" {
@@ -56,9 +56,7 @@ func TestDataCodecovConfigRead(t *testing.T) {
 		defer cancel()
 
 		rd := newResourceData(t, "svc123", "owner123", "repo123")
-		err := dataCodecovConfigRead(
-			context.Background(),
-			rd,
+		err := dataCodecovConfigRead(context.Background(), rd,
 			&providerConfig{
 				TokenV2:      "hoge",
 				EndpointBase: endpoint,
@@ -71,7 +69,7 @@ func TestDataCodecovConfigRead(t *testing.T) {
 			t.Errorf("Unexpected upload_token: %s", token)
 		}
 	})
-	t.Run("GatewayTimeout", func(t *testing.T) {
+	t.Run("MaxRetries", func(t *testing.T) {
 		var cntReq int
 		endpoint, cancel := newDummyServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusGatewayTimeout)
@@ -80,9 +78,7 @@ func TestDataCodecovConfigRead(t *testing.T) {
 		defer cancel()
 
 		rd := newResourceData(t, "svc123", "owner123", "repo123")
-		err := dataCodecovConfigRead(
-			context.Background(),
-			rd,
+		err := dataCodecovConfigRead(context.Background(), rd,
 			&providerConfig{
 				TokenV2:      "hoge",
 				EndpointBase: endpoint,
@@ -93,6 +89,35 @@ func TestDataCodecovConfigRead(t *testing.T) {
 			t.Errorf("Unexpected error: %v", err)
 		}
 		if cntReq != 4 {
+			t.Errorf("Unexpected retry count: %d", cntReq)
+		}
+	})
+	t.Run("SuccessAfterRetries", func(t *testing.T) {
+		var cntReq int
+		endpoint, cancel := newDummyServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if cntReq == 2 {
+				w.Write([]byte(`{"upload_token":"token1234"}`))
+			} else {
+				w.WriteHeader(http.StatusGatewayTimeout)
+			}
+			cntReq++
+		})
+		defer cancel()
+
+		rd := newResourceData(t, "svc123", "owner123", "repo123")
+		err := dataCodecovConfigRead(context.Background(), rd,
+			&providerConfig{
+				TokenV2:      "hoge",
+				EndpointBase: endpoint,
+			},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if token := rd.Get("upload_token"); token != "token1234" {
+			t.Errorf("Unexpected upload_token: %s", token)
+		}
+		if cntReq != 3 {
 			t.Errorf("Unexpected retry count: %d", cntReq)
 		}
 	})
@@ -108,9 +133,7 @@ func TestDataCodecovConfigRead(t *testing.T) {
 		defer cancel()
 
 		rd := newResourceData(t, "svc123", "owner123", "repo123")
-		err := dataCodecovConfigRead(
-			context.Background(),
-			rd,
+		err := dataCodecovConfigRead(context.Background(), rd,
 			&providerConfig{
 				TokenV2:      "hoge",
 				EndpointBase: endpoint,
@@ -123,9 +146,7 @@ func TestDataCodecovConfigRead(t *testing.T) {
 	})
 	t.Run("NetworkError", func(t *testing.T) {
 		rd := newResourceData(t, "svc123", "owner123", "repo123")
-		err := dataCodecovConfigRead(
-			context.Background(),
-			rd,
+		err := dataCodecovConfigRead(context.Background(), rd,
 			&providerConfig{
 				TokenV2:      "hoge",
 				EndpointBase: "http://localhost:0",
