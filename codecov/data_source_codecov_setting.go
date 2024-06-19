@@ -1,6 +1,7 @@
 package codecov
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -23,7 +25,9 @@ type Config struct {
 
 func dataSourceCodecovConfig() *schema.Resource {
 	return &schema.Resource{
-		Read: dataCodecovConfigRead,
+		ReadContext: func(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+			return diag.FromErr(dataCodecovConfigRead(ctx, d, m))
+		},
 		Schema: map[string]*schema.Schema{
 			"service": {
 				Type:     schema.TypeString,
@@ -46,7 +50,7 @@ func dataSourceCodecovConfig() *schema.Resource {
 	}
 }
 
-func dataCodecovConfigRead(d *schema.ResourceData, meta interface{}) error {
+func dataCodecovConfigRead(ctx context.Context, d *schema.ResourceData, meta interface{}) error {
 	service := d.Get("service").(string)
 	owner := d.Get("owner").(string)
 	repo := d.Get("repo").(string)
@@ -61,7 +65,7 @@ func dataCodecovConfigRead(d *schema.ResourceData, meta interface{}) error {
 	)
 	wait := retryWaitBase
 	for i := 0; ; i++ {
-		c, err = readRepoConfig(service, owner, repo, token)
+		c, err = readRepoConfig(ctx, service, owner, repo, token)
 		if err == nil {
 			d.SetId(fmt.Sprintf("%s/%s/%s", service, owner, repo))
 			d.Set("upload_token", c.UploadToken)
@@ -85,8 +89,8 @@ func dataCodecovConfigRead(d *schema.ResourceData, meta interface{}) error {
 	}
 }
 
-func readRepoConfig(service, owner, repo, token string) (*Config, error) {
-	req, err := http.NewRequest("GET",
+func readRepoConfig(ctx context.Context, service, owner, repo, token string) (*Config, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET",
 		fmt.Sprintf("https://codecov.io/api/v2/%s/%s/repos/%s/config/",
 			service, owner, repo,
 		),
