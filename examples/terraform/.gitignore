@@ -1,4 +1,6 @@
 .terraform
+.terraform.lock.hcl
+local-providers
 plan
 terraform.tfstate
 terraform.tfstate.backup
