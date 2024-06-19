@@ -117,7 +117,7 @@ func readRepoConfig(service, owner, repo, token string) (*Config, error) {
 		// Wait extra 1 second and retry to workaround the problem.
 		time.Sleep(time.Second)
 		return nil, &temporaryError{errors.New(resp.Status)}
-	case http.NotFound:
+	case http.StatusNotFound:
 		if d > 10*time.Second {
 			// Codecov API returns 404 after large delay when the server is unstable.
 			return nil, &temporaryError{errors.New(resp.Status)}
