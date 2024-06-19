@@ -15,8 +15,6 @@ jobs:
       matrix:
         hoge: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
-      - name: IP
-        run: echo "::notice title=IP::$(curl icanhazip.com)"
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Go
@@ -46,3 +44,9 @@ jobs:
         run: make test
         env:
           CODECOV_API_V2_TOKEN: ${{ secrets.CODECOV_API_V2_TOKEN }}
+      - name: Success
+        if: success()
+        run: echo "::notice title=IP::$(curl icanhazip.com)"
+      - name: Failure
+        if: failure()
+        run: echo "::error title=IP::$(curl icanhazip.com)"
