@@ -17,6 +17,11 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("CODECOV_API_V2_TOKEN", nil),
 				Sensitive:   true,
 			},
+			"endpoint_base": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "https://codecov.io",
+			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"ucodecov_settings": dataSourceCodecovConfig(),
@@ -27,5 +32,13 @@ func Provider() *schema.Provider {
 }
 
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	return d.Get("token_v2").(string), diag.Diagnostics{}
+	return &providerConfig{
+		TokenV2:      d.Get("token_v2").(string),
+		EndpointBase: d.Get("endpoint_base").(string),
+	}, diag.Diagnostics{}
+}
+
+type providerConfig struct {
+	TokenV2      string
+	EndpointBase string
 }

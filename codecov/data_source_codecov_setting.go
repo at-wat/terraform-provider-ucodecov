@@ -1,6 +1,7 @@
 package codecov
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,10 +9,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-const (
+var (
 	maxRetry      = 6
 	retryWaitBase = time.Second
 )
@@ -23,7 +25,9 @@ type Config struct {
 
 func dataSourceCodecovConfig() *schema.Resource {
 	return &schema.Resource{
-		Read: dataCodecovConfigRead,
+		ReadContext: func(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+			return diag.FromErr(dataCodecovConfigRead(ctx, d, m))
+		},
 		Schema: map[string]*schema.Schema{
 			"service": {
 				Type:     schema.TypeString,
@@ -46,12 +50,12 @@ func dataSourceCodecovConfig() *schema.Resource {
 	}
 }
 
-func dataCodecovConfigRead(d *schema.ResourceData, meta interface{}) error {
+func dataCodecovConfigRead(ctx context.Context, d *schema.ResourceData, meta interface{}) error {
 	service := d.Get("service").(string)
 	owner := d.Get("owner").(string)
 	repo := d.Get("repo").(string)
-	token := meta.(string)
-	if token == "" {
+	cfg := meta.(*providerConfig)
+	if cfg.TokenV2 == "" {
 		return errors.New("codecov: CODECOV_API_V2_TOKEN is not given")
 	}
 
@@ -61,7 +65,7 @@ func dataCodecovConfigRead(d *schema.ResourceData, meta interface{}) error {
 	)
 	wait := retryWaitBase
 	for i := 0; ; i++ {
-		c, err = readRepoConfig(service, owner, repo, token)
+		c, err = readRepoConfig(ctx, service, owner, repo, cfg)
 		if err == nil {
 			d.SetId(fmt.Sprintf("%s/%s/%s", service, owner, repo))
 			d.Set("upload_token", c.UploadToken)
@@ -85,14 +89,18 @@ func dataCodecovConfigRead(d *schema.ResourceData, meta interface{}) error {
 	}
 }
 
-func readRepoConfig(service, owner, repo, token string) (*Config, error) {
-	req, err := http.NewRequest("GET",
-		fmt.Sprintf("https://codecov.io/api/v2/%s/%s/repos/%s/config/",
+func readRepoConfig(ctx context.Context, service, owner, repo string, cfg *providerConfig) (*Config, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET",
+		fmt.Sprintf("%s/api/v2/%s/%s/repos/%s/config/",
+			cfg.EndpointBase,
 			service, owner, repo,
 		),
 		http.NoBody,
 	)
-	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", token))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", cfg.TokenV2))
 
 	cli := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -124,14 +132,14 @@ func readRepoConfig(service, owner, repo, token string) (*Config, error) {
 		}
 		fallthrough
 	default:
-		return nil, errors.New(resp.Status)
+		return nil, &fatalError{errors.New(resp.Status)}
 	}
 
 	dec := json.NewDecoder(resp.Body)
 
 	var c Config
 	if err := dec.Decode(&c); err != nil {
-		return nil, err
+		return nil, &fatalError{err}
 	}
 	return &c, nil
 }
@@ -142,3 +150,7 @@ type temporaryError struct {
 
 func (e *temporaryError) Timeout() bool   { return false }
 func (e *temporaryError) Temporary() bool { return true }
+
+type fatalError struct {
+	error
+}
