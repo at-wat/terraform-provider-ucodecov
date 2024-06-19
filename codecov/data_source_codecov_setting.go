@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -24,7 +25,9 @@ type Config struct {
 
 func dataSourceCodecovConfig() *schema.Resource {
 	return &schema.Resource{
-		ReadContext: dataCodecovConfigRead,
+		ReadContext: func(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+			return diag.FromErr(dataCodecovConfigRead(ctx, d, m))
+		},
 		Schema: map[string]*schema.Schema{
 			"service": {
 				Type:     schema.TypeString,
