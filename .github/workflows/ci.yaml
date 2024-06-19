@@ -35,6 +35,8 @@ jobs:
       - name: E2E test
         if: github.event.pull_request.head.repo.fork == false
         working-directory: examples/terraform
-        run: make test
+        run: |
+          cp ../../.ci/terraform.tfvars ./
+          make test
         env:
           CODECOV_API_V2_TOKEN: ${{ secrets.CODECOV_API_V2_TOKEN }}
