@@ -16,7 +16,7 @@ jobs:
         hoge: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
       - name: IP
-        run: curl icanhazip.com
+        run: echo "::notice title=IP::$(curl icanhazip.com)"
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Go
