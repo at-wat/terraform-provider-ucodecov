@@ -108,12 +108,12 @@ func readRepoConfig(service, owner, repo, token string) (*Config, error) {
 	switch resp.StatusCode {
 	case http.StatusOK:
 	case http.StatusServiceUnavailable, http.StatusGatewayTimeout, http.StatusBadGateway:
-		return nil, &timeoutError{errors.New(resp.Status)}
+		return nil, &temporaryError{errors.New(resp.Status)}
 	case http.StatusFound, http.StatusTemporaryRedirect:
 		// There was a bug that the request was redirected to the html setting page.
 		// Wait extra 1 second and retry to workaround the problem.
 		time.Sleep(time.Second)
-		return nil, &timeoutError{errors.New(resp.Status)}
+		return nil, &temporaryError{errors.New(resp.Status)}
 	default:
 		return nil, errors.New(resp.Status)
 	}
@@ -127,9 +127,9 @@ func readRepoConfig(service, owner, repo, token string) (*Config, error) {
 	return &c, nil
 }
 
-type timeoutError struct {
+type temporaryError struct {
 	error
 }
 
-func (e *timeoutError) Timeout() bool   { return true }
-func (e *timeoutError) Temporary() bool { return true }
+func (e *temporaryError) Timeout() bool   { return false }
+func (e *temporaryError) Temporary() bool { return true }
