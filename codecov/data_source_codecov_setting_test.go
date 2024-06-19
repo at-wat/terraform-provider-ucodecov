@@ -40,6 +40,7 @@ func newResourceData(t *testing.T, service, owner, repo string) *schema.Resource
 func TestDataCodecovConfigRead(t *testing.T) {
 	maxRetry = 3
 	retryWaitBase = 100 * time.Millisecond
+	waitOnRedirect = 500 * time.Millisecond
 
 	t.Run("Success", func(t *testing.T) {
 		var called bool
@@ -155,6 +156,37 @@ func TestDataCodecovConfigRead(t *testing.T) {
 		var ne net.Error
 		if !errors.As(err, &ne) {
 			t.Errorf("Unexpected error: %v", err)
+		}
+	})
+	t.Run("RetryOnRedirect", func(t *testing.T) {
+		var called bool
+		endpoint, cancel := newDummyServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if called {
+				w.Write([]byte(`{"upload_token":"token1234"}`))
+			} else {
+				w.WriteHeader(http.StatusTemporaryRedirect)
+			}
+			called = true
+		})
+		defer cancel()
+
+		rd := newResourceData(t, "svc123", "owner123", "repo123")
+		t0 := time.Now()
+		err := dataCodecovConfigRead(context.Background(), rd,
+			&providerConfig{
+				TokenV2:      "hoge",
+				EndpointBase: endpoint,
+			},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		dur := time.Now().Sub(t0)
+		if token := rd.Get("upload_token"); token != "token1234" {
+			t.Errorf("Unexpected upload_token: %s", token)
+		}
+		if dur < 450*time.Millisecond || 650*time.Millisecond < dur {
+			t.Errorf("Unexpected delay: %v", dur)
 		}
 	})
 }
