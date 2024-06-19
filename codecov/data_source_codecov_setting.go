@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-const (
+var (
 	maxRetry      = 6
 	retryWaitBase = time.Second
 )
@@ -54,8 +54,8 @@ func dataCodecovConfigRead(ctx context.Context, d *schema.ResourceData, meta int
 	service := d.Get("service").(string)
 	owner := d.Get("owner").(string)
 	repo := d.Get("repo").(string)
-	token := meta.(string)
-	if token == "" {
+	cfg := meta.(*providerConfig)
+	if cfg.TokenV2 == "" {
 		return errors.New("codecov: CODECOV_API_V2_TOKEN is not given")
 	}
 
@@ -65,7 +65,7 @@ func dataCodecovConfigRead(ctx context.Context, d *schema.ResourceData, meta int
 	)
 	wait := retryWaitBase
 	for i := 0; ; i++ {
-		c, err = readRepoConfig(ctx, service, owner, repo, token)
+		c, err = readRepoConfig(ctx, service, owner, repo, cfg)
 		if err == nil {
 			d.SetId(fmt.Sprintf("%s/%s/%s", service, owner, repo))
 			d.Set("upload_token", c.UploadToken)
@@ -89,14 +89,18 @@ func dataCodecovConfigRead(ctx context.Context, d *schema.ResourceData, meta int
 	}
 }
 
-func readRepoConfig(ctx context.Context, service, owner, repo, token string) (*Config, error) {
+func readRepoConfig(ctx context.Context, service, owner, repo string, cfg *providerConfig) (*Config, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET",
-		fmt.Sprintf("https://codecov.io/api/v2/%s/%s/repos/%s/config/",
+		fmt.Sprintf("%s/api/v2/%s/%s/repos/%s/config/",
+			cfg.EndpointBase,
 			service, owner, repo,
 		),
 		http.NoBody,
 	)
-	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", token))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", cfg.TokenV2))
 
 	cli := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -119,14 +123,14 @@ func readRepoConfig(ctx context.Context, service, owner, repo, token string) (*C
 		time.Sleep(time.Second)
 		return nil, &temporaryError{errors.New(resp.Status)}
 	default:
-		return nil, errors.New(resp.Status)
+		return nil, &fatalError{errors.New(resp.Status)}
 	}
 
 	dec := json.NewDecoder(resp.Body)
 
 	var c Config
 	if err := dec.Decode(&c); err != nil {
-		return nil, err
+		return nil, &fatalError{err}
 	}
 	return &c, nil
 }
@@ -137,3 +141,7 @@ type temporaryError struct {
 
 func (e *temporaryError) Timeout() bool   { return false }
 func (e *temporaryError) Temporary() bool { return true }
+
+type fatalError struct {
+	error
+}
