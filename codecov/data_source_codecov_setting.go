@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-const (
+var (
 	maxRetry      = 6
 	retryWaitBase = time.Second
 )
@@ -97,6 +97,9 @@ func readRepoConfig(ctx context.Context, service, owner, repo string, cfg *provi
 		),
 		http.NoBody,
 	)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", cfg.TokenV2))
 
 	cli := &http.Client{
@@ -120,14 +123,14 @@ func readRepoConfig(ctx context.Context, service, owner, repo string, cfg *provi
 		time.Sleep(time.Second)
 		return nil, &temporaryError{errors.New(resp.Status)}
 	default:
-		return nil, errors.New(resp.Status)
+		return nil, &fatalError{errors.New(resp.Status)}
 	}
 
 	dec := json.NewDecoder(resp.Body)
 
 	var c Config
 	if err := dec.Decode(&c); err != nil {
-		return nil, err
+		return nil, &fatalError{err}
 	}
 	return &c, nil
 }
@@ -138,3 +141,7 @@ type temporaryError struct {
 
 func (e *temporaryError) Timeout() bool   { return false }
 func (e *temporaryError) Temporary() bool { return true }
+
+type fatalError struct {
+	error
+}
