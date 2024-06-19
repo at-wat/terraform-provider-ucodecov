@@ -18,8 +18,9 @@ func Provider() *schema.Provider {
 				Sensitive:   true,
 			},
 			"endpoint_base": {
-				Type:    schema.TypeString,
-				Default: "https://codecov.io",
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "https://codecov.io",
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
