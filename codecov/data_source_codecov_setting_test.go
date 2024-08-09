@@ -41,6 +41,8 @@ func TestDataCodecovConfigRead(t *testing.T) {
 	maxRetry = 3
 	retryWaitBase = 100 * time.Millisecond
 	waitOnRedirect = 500 * time.Millisecond
+	ticker := time.NewTicker(time.Millisecond)
+	defer ticker.Stop()
 
 	t.Run("Success", func(t *testing.T) {
 		var called bool
@@ -61,6 +63,7 @@ func TestDataCodecovConfigRead(t *testing.T) {
 			&providerConfig{
 				TokenV2:      "hoge",
 				EndpointBase: endpoint,
+				APICallTick:  ticker.C,
 			},
 		)
 		if err != nil {
@@ -83,6 +86,7 @@ func TestDataCodecovConfigRead(t *testing.T) {
 			&providerConfig{
 				TokenV2:      "hoge",
 				EndpointBase: endpoint,
+				APICallTick:  ticker.C,
 			},
 		)
 		var te *temporaryError
@@ -110,6 +114,7 @@ func TestDataCodecovConfigRead(t *testing.T) {
 			&providerConfig{
 				TokenV2:      "hoge",
 				EndpointBase: endpoint,
+				APICallTick:  ticker.C,
 			},
 		)
 		if err != nil {
@@ -138,6 +143,7 @@ func TestDataCodecovConfigRead(t *testing.T) {
 			&providerConfig{
 				TokenV2:      "hoge",
 				EndpointBase: endpoint,
+				APICallTick:  ticker.C,
 			},
 		)
 		var fe *fatalError
@@ -151,6 +157,7 @@ func TestDataCodecovConfigRead(t *testing.T) {
 			&providerConfig{
 				TokenV2:      "hoge",
 				EndpointBase: "http://localhost:0",
+				APICallTick:  ticker.C,
 			},
 		)
 		var ne net.Error
@@ -176,6 +183,7 @@ func TestDataCodecovConfigRead(t *testing.T) {
 			&providerConfig{
 				TokenV2:      "hoge",
 				EndpointBase: endpoint,
+				APICallTick:  ticker.C,
 			},
 		)
 		if err != nil {

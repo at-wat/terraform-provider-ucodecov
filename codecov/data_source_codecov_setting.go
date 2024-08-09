@@ -108,6 +108,7 @@ func readRepoConfig(ctx context.Context, service, owner, repo string, cfg *provi
 			return http.ErrUseLastResponse
 		},
 	}
+	<-cfg.APICallTick
 	resp, err := cli.Do(req)
 	if err != nil {
 		return nil, err
