@@ -2,7 +2,7 @@ module github.com/at-wat/terraform-provider-ucodecov
 
 go 1.22.0
 
-toolchain go1.23.6
+toolchain go1.24.0
 
 require github.com/hashicorp/terraform-plugin-sdk/v2 v2.36.0
 
