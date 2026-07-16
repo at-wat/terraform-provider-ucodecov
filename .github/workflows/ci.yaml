@@ -30,7 +30,7 @@ jobs:
         id: terraform-version
         run: echo "name=version::$(cat .terraform-version)" > ${GITHUB_OUTPUT}
       - name: Setup terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ steps.terraform-version.outputs.version }}
           terraform_wrapper: false
